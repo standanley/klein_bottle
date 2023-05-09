@@ -20,7 +20,7 @@ def surface_klein(uv):
     h_bottom = 1
     w_right = 0.5
     w_left = 0.3
-    r1 = 0.1
+    r1 = 0.15
     r2 = 0.4
     r3 = 0.6
 

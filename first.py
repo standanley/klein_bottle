@@ -127,25 +127,26 @@ callback = start_visualization()
 xyzs = surface(uvs)
 callback(xyzs, [], get_colors(uvs))
 
-for i in range(200):
-    jac = jacobian(uvs)
-    xyzs = surface(uvs)
-    print('starting pairs')
-    pairs = get_pairs(uvs, xyzs, spring_max_length)
-    print('finished pairs')
-    edges = [(xyzs[i], xyzs[j]) for i, j, dist in pairs]
-    callback(xyzs, edges, get_colors(uvs))
-    if i == 0:
-        print('sleeping 10 seconds to let vpython load better')
-        time.sleep(10)
+#for i in range(200):
+#    jac = jacobian(uvs)
+#    xyzs = surface(uvs)
+#    print('starting pairs')
+#    pairs = get_pairs(uvs, xyzs, spring_max_length)
+#    print('finished pairs')
+#    edges = [(xyzs[i], xyzs[j]) for i, j, dist in pairs]
+#    callback(xyzs, edges, get_colors(uvs))
+#    if i == 0:
+#        print('sleeping 10 seconds to let vpython load better')
+#        time.sleep(10)
+#
+#    uvs = spring_push(uvs, xyzs, jac, pairs, spring_max_length, spring_k)
 
-    uvs = spring_push(uvs, xyzs, jac, pairs, spring_max_length, spring_k)
+#np.savetxt('uvs_moved.csv', uvs, delimiter=',')
+uvs = np.loadtxt('uvs_moved.csv', delimiter=',')
 
 xyzs = surface(uvs)
 pairs = get_pairs(uvs, xyzs, spring_max_length)
 edges = [(xyzs[i], xyzs[j]) for i, j, dist in pairs]
 callback(xyzs, edges, get_colors(uvs))
 
-np.savetxt('uvs_moved.csv', uvs, delimiter=',')
-uvs = np.loadtxt('uvs_moved.csv', delimiter=',')
 
