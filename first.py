@@ -154,8 +154,9 @@ def undo_uv_wrapping(uvs):
 
 def remove_crosses(uvs, xyzs, pairs):
     edge_lookup = {(i, j): dist for i, j, dist in pairs}
-    #edges_final = set(edge_lookup.keys())
-    edges_final = []
+    edges_final = set(edge_lookup.keys())
+    print('starting with', len(edges_final), 'edges')
+    #edges_final = []
 
     def check_cross(a_i, a_j, b_i, b_j):
         # first we need to undo any uv wrapping
@@ -185,6 +186,11 @@ def remove_crosses(uvs, xyzs, pairs):
             # so we can quickly rule out pairs of edges if the surrounding square isnt in the lookup
             a_i, a_j, a_dist = pairs[a]
             b_i, b_j, b_dist = pairs[b]
+
+            if (a_i, a_j) not in edges_final or (b_i, b_j) not in edges_final:
+                # one of these has already been removed for crossing something else
+                continue
+
             can_skip = False
             for test1, test2 in itertools.product((a_i, a_j), (b_i, b_j)):
                 if tuple(sorted((test1, test2))) not in edge_lookup:
@@ -196,9 +202,14 @@ def remove_crosses(uvs, xyzs, pairs):
             if not check_cross(a_i, a_j, b_i, b_j):
                 continue
 
-            edges_final.append((a, b))
+            if a_dist < b_dist:
+                edges_final.remove((b_i, b_j))
+            else:
+                edges_final.remove((a_i, a_j))
+            #edges_final.append((a, b))
 
-    return edges_final
+    print('in the end, ', len(edges_final), 'edges left')
+    return list(edges_final)
 
 N = 200
 uvs = np.random.uniform(size=(N, 2))
@@ -240,4 +251,7 @@ for a, b in edges_final:
     colors_temp[b] = 1
 
 vertex_coloring = get_colors(uvs)
-callback(xyzs, edges, vertex_coloring, colors_temp)
+#callback(xyzs, edges, vertex_coloring, colors_temp)
+
+edges2 = [(xyzs[a], xyzs[b]) for a, b in edges_final]
+callback(xyzs, edges2, vertex_coloring)
