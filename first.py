@@ -50,4 +50,4 @@ pairs = get_pairs(uvs)
 xyzs = surface(uvs)
 edges = [(xyzs[i], xyzs[j]) for i, j, dist in pairs]
 
-start_visualization(xyzs, edges)
+start_visualization(xyzs, edges, uvs[:,0])
