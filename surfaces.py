@@ -88,7 +88,11 @@ def surface_klein(uv):
         f = lambda t0: jug_handle(1-t0, h_top, h_bottom, -w_left)
 
         r = r2 + np.sin(2*np.pi*t)*(r3-r2) if t < 0.5 else r2 + np.sin(np.pi*(t-0.5))*(r1-r2)
-        x, y, z = cylinderify(f, t, v, r)
+        # because the direction of f reverses at u=0.5, we need to do something to v so that
+        # the seams line up correctly here. Note that dx/dt continues to be right-to-left, while
+        # dz/dt switches from down to up, so to make the circles consistent we need to change
+        # our process for v. I don't know why it is the way it is exactly
+        x, y, z = cylinderify(f, t, (-v+0.5), r)
 
 
     return np.array([x, y, z])

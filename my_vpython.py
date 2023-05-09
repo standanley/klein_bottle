@@ -15,10 +15,10 @@ def start_visualization():
     def callback(vertices, edges, vertex_coloring=None):
         if len(vertices) > len(vs):
             for i in range(len(vertices) - len(vs)):
-                vs.append(sphere())
+                vs.append(sphere(visible=False))
         if len(edges) > len(es):
             for i in range(len(edges) - len(es)):
-                es.append(cylinder())
+                es.append(cylinder(visible=False))
 
         # by default y is locked to be straight up, but I like to use z for that
         for i, v in enumerate(vs):
@@ -38,6 +38,7 @@ def start_visualization():
             else:
                 c = vertex_coloring[i]
                 v.color = vector(c, 0, 1-c)
+            v.visible = True
 
         for i, e in enumerate(es):
             if i >= len(edges):
@@ -54,5 +55,6 @@ def start_visualization():
             e.length = dist
             e.radius = 0.01
             e.color = vector(0,1,0)
+            e.visible = True
 
     return callback

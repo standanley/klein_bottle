@@ -31,7 +31,6 @@ def get_dist(uv_a, uv_b, xyz_a, xyz_b):
     return np.sqrt(np.sum((xyz_b - xyz_a)**2))
 
 def get_pairs(uvs, xyzs, maximum):
-    xyzs = surface(uvs)
     close = []
     for i in range(len(uvs)-1):
         for j in range(i+1, len(uvs)):
@@ -52,7 +51,7 @@ def bump_uv(uv, duv):
     u_final = u_temp % 1
 
     v_temp = (uv[1] + duv[1]) % 1
-    v_final = 1 - v_temp if u_temp >= 1 else v_temp
+    v_final = (0.5 - v_temp)%1 if u_temp >= 1 else v_temp
 
     return np.array([u_final, v_final])
 
@@ -113,6 +112,9 @@ def spring_push(uvs, xyzs, jac, edges, max_dist, k):
 
     return uvs_new
 
+def get_colors(uvs):
+    # use channel 1 to see the seam
+    return uvs[:, 0]
 
 N = 200
 uvs = np.random.uniform(size=(N, 2))
@@ -120,9 +122,10 @@ uvs = np.random.uniform(size=(N, 2))
 spring_max_length = 0.3
 spring_k = 0.05
 
-print('starting callback')
+
 callback = start_visualization()
-print('finished callback')
+xyzs = surface(uvs)
+callback(xyzs, [], get_colors(uvs))
 
 for i in range(200):
     jac = jacobian(uvs)
@@ -131,7 +134,7 @@ for i in range(200):
     pairs = get_pairs(uvs, xyzs, spring_max_length)
     print('finished pairs')
     edges = [(xyzs[i], xyzs[j]) for i, j, dist in pairs]
-    callback(xyzs, edges, uvs[:, 0])
+    callback(xyzs, edges, get_colors(uvs))
     if i == 0:
         print('sleeping 10 seconds to let vpython load better')
         time.sleep(10)
@@ -141,7 +144,7 @@ for i in range(200):
 xyzs = surface(uvs)
 pairs = get_pairs(uvs, xyzs, spring_max_length)
 edges = [(xyzs[i], xyzs[j]) for i, j, dist in pairs]
-callback(xyzs, edges, uvs[:,0])
+callback(xyzs, edges, get_colors(uvs))
 
 np.savetxt('uvs_moved.csv', uvs, delimiter=',')
 uvs = np.loadtxt('uvs_moved.csv', delimiter=',')
