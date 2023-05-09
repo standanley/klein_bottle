@@ -115,7 +115,7 @@ def spring_push(uvs, xyzs, jac, edges, max_dist, k):
 
 def get_colors(uvs):
     # use channel 1 to see the seam
-    return uvs[:, 0]
+    return uvs[:, 1]
 
 def undo_uv_wrapping(uvs):
     # given a set of uvs that are reasonably close together, make sure they aren't
@@ -123,6 +123,7 @@ def undo_uv_wrapping(uvs):
     # i.e. change 0.1 and 0.9 into 0.1 and -0.1
     # this probably breaks if there are uvs in the -0.1 to 0.1 range and more in the 0.4 to 0.6 range;
     # we assume they have been pre-filtered so they are already reasonably close together
+    uvs = np.array(uvs)
     uvs_final = np.copy(uvs)
     u_rep = uvs_final[0][0]
     if u_rep < 0.25 or u_rep > 0.75:
@@ -131,13 +132,22 @@ def undo_uv_wrapping(uvs):
             if uvs_final[i][0] > 0.5:
                 uvs_final[i][0] -= 1
                 # subtracting 1 always crosses the border, so we need to flip v
-                uvs_final[i][1] = 0.5 - uvs_final[i][1]
+                uvs_final[i][1] = (0.5 - uvs_final[i][1])%1
     # same game, except shifting v never forces us to flip u
+    temp = uvs_final.copy()
     v_rep = uvs_final[0][1]
     if v_rep < 0.25 or v_rep > 0.75:
         for i in range(len(uvs_final)):
             if uvs_final[i][1] > 0.5:
                 uvs_final[i][1] -= 1
+    us = uvs_final[:,0]
+    vs = uvs_final[:,1]
+    # these assertions can absolutely fail because sometimes the v is that bad
+    # in other words, we sometimes get an edge spanning right through the middle of the
+    # thin pipe, and then it's hard to say which side it should be counted as going around
+    assert 0 < max(us) - min(us) < 0.2
+    #assert 0 < max(vs) - min(vs) < 0.4
+    # (not (0 < max(vs) - min(vs) < 0.1)) and 0.9>us[0]>0.6
     return uvs_final
 
 
@@ -152,7 +162,7 @@ def remove_crosses(uvs, xyzs, pairs):
         # unwrap u first, becasue
         uvs_quad = [uvs[k] for k in [a_i, a_j, b_i, b_j]]
         uvs_unwrapped = undo_uv_wrapping(uvs_quad)
-        print(uvs_unwrapped)
+        #print(uvs_unwrapped)
 
         def is_left(point, v, test_point):
             # return true iff test_point is to the left looking from point in direction v
@@ -160,7 +170,7 @@ def remove_crosses(uvs, xyzs, pairs):
             cross_product = v[0]*w[1] - v[1]*w[0]
             return cross_product < 0
 
-        e, f, g, h = uvs_quad
+        e, f, g, h = uvs_unwrapped
         vec_a = f - e
         vec_b = h - g
         cross = ((is_left(e, vec_a, g) != is_left(e, vec_a, h))
