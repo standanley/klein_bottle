@@ -1,3 +1,4 @@
+import itertools
 import time
 
 import numpy as np
@@ -116,6 +117,79 @@ def get_colors(uvs):
     # use channel 1 to see the seam
     return uvs[:, 0]
 
+def undo_uv_wrapping(uvs):
+    # given a set of uvs that are reasonably close together, make sure they aren't
+    # across a seam
+    # i.e. change 0.1 and 0.9 into 0.1 and -0.1
+    # this probably breaks if there are uvs in the -0.1 to 0.1 range and more in the 0.4 to 0.6 range;
+    # we assume they have been pre-filtered so they are already reasonably close together
+    uvs_final = np.copy(uvs)
+    u_rep = uvs_final[0][0]
+    if u_rep < 0.25 or u_rep > 0.75:
+        # kind of near border, let's use border version, everyone must be in [-0.5, 0.5]
+        for i in range(len(uvs_final)):
+            if uvs_final[i][0] > 0.5:
+                uvs_final[i][0] -= 1
+                # subtracting 1 always crosses the border, so we need to flip v
+                uvs_final[i][1] = 0.5 - uvs_final[i][1]
+    # same game, except shifting v never forces us to flip u
+    v_rep = uvs_final[0][1]
+    if v_rep < 0.25 or v_rep > 0.75:
+        for i in range(len(uvs_final)):
+            if uvs_final[i][1] > 0.5:
+                uvs_final[i][1] -= 1
+    return uvs_final
+
+
+
+def remove_crosses(uvs, xyzs, pairs):
+    edge_lookup = {(i, j): dist for i, j, dist in pairs}
+    #edges_final = set(edge_lookup.keys())
+    edges_final = []
+
+    def check_cross(a_i, a_j, b_i, b_j):
+        # first we need to undo any uv wrapping
+        # unwrap u first, becasue
+        uvs_quad = [uvs[k] for k in [a_i, a_j, b_i, b_j]]
+        uvs_unwrapped = undo_uv_wrapping(uvs_quad)
+        print(uvs_unwrapped)
+
+        def is_left(point, v, test_point):
+            # return true iff test_point is to the left looking from point in direction v
+            w = test_point - point
+            cross_product = v[0]*w[1] - v[1]*w[0]
+            return cross_product < 0
+
+        e, f, g, h = uvs_quad
+        vec_a = f - e
+        vec_b = h - g
+        cross = ((is_left(e, vec_a, g) != is_left(e, vec_a, h))
+                 and (is_left(g, vec_b, e) != is_left(g, vec_b, f)))
+        return cross
+
+
+    for a in range(len(pairs) - 1):
+        for b in range(a+1, len(pairs)):
+            # we rely on the fact that if a and b cross, the surrounding square
+            # all has shorter edges than the crossing diagonals
+            # so we can quickly rule out pairs of edges if the surrounding square isnt in the lookup
+            a_i, a_j, a_dist = pairs[a]
+            b_i, b_j, b_dist = pairs[b]
+            can_skip = False
+            for test1, test2 in itertools.product((a_i, a_j), (b_i, b_j)):
+                if tuple(sorted((test1, test2))) not in edge_lookup:
+                    can_skip = True
+                    break
+            if can_skip:
+                continue
+
+            if not check_cross(a_i, a_j, b_i, b_j):
+                continue
+
+            edges_final.append((a, b))
+
+    return edges_final
+
 N = 200
 uvs = np.random.uniform(size=(N, 2))
 
@@ -149,4 +223,11 @@ pairs = get_pairs(uvs, xyzs, spring_max_length)
 edges = [(xyzs[i], xyzs[j]) for i, j, dist in pairs]
 callback(xyzs, edges, get_colors(uvs))
 
+edges_final = remove_crosses(uvs, xyzs, pairs)
+colors_temp = np.zeros(len(pairs))
+for a, b in edges_final:
+    colors_temp[a] = 1
+    colors_temp[b] = 1
 
+vertex_coloring = get_colors(uvs)
+callback(xyzs, edges, vertex_coloring, colors_temp)

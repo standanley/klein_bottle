@@ -12,7 +12,7 @@ def start_visualization():
     vs = []
     es = []
 
-    def callback(vertices, edges, vertex_coloring=None):
+    def callback(vertices, edges, vertex_coloring=None, edge_coloring=None):
         if len(vertices) > len(vs):
             for i in range(len(vertices) - len(vs)):
                 vs.append(sphere(visible=False))
@@ -54,7 +54,11 @@ def start_visualization():
             e.axis = vector(bx-ax, by-ay, bz-az)
             e.length = dist
             e.radius = 0.01
-            e.color = vector(0,1,0)
+            if edge_coloring is None:
+                e.color = vector(0,1,0)
+            else:
+                c = edge_coloring[i]
+                e.color = vector(c, 1, c)
             e.visible = True
 
     return callback
