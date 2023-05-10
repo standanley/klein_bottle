@@ -133,13 +133,20 @@ def undo_uv_wrapping(uvs):
                 uvs_final[i][0] -= 1
                 # subtracting 1 always crosses the border, so we need to flip v
                 uvs_final[i][1] = (0.5 - uvs_final[i][1])%1
+
     # same game, except shifting v never forces us to flip u
+    # we want to be more careful with the v, and put the split at the widest break
     temp = uvs_final.copy()
     v_rep = uvs_final[0][1]
-    if v_rep < 0.25 or v_rep > 0.75:
-        for i in range(len(uvs_final)):
-            if uvs_final[i][1] > 0.5:
-                uvs_final[i][1] -= 1
+
+    vs = sorted(uvs_final[:,1])
+    vs_gaps = [(vs[(i+1)%len(vs)]-vs[i])%1 for i in range(len(vs))]
+    max_gap_location = np.argmax(vs_gaps)
+    break_location = (vs[max_gap_location] + vs_gaps[max_gap_location] / 2) % 1
+
+    for i in range(len(uvs_final)):
+        if uvs_final[i][1] > break_location:
+            uvs_final[i][1] -= 1
     us = uvs_final[:,0]
     vs = uvs_final[:,1]
     # these assertions can absolutely fail because sometimes the v is that bad
